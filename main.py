@@ -40,12 +40,39 @@ class Pikabu_api():
         for tag in soup.findAll("div", {"class": "story__tags"})[0].findChildren():
             data['tags'].append({'name': tag.text, 'url': 'https://pikabu.ru'+tag['href']})
         data['comments'] = self._get_comments(soup)
-        pprint(data['comments'])
-        exit()
-
         if self.debug:
             pprint(data)
         return content
+
+    def get_user(self, url):
+        content = self._get_page(url)
+        soup = BeautifulSoup(content, 'html.parser')
+        data = {}
+        data['nickname'] = soup.findAll("span", {"itemprop": "additionalName"})[0].text
+        data['url'] = url
+        data['about'] = ''
+        if soup.findAll("span", {"class": "profile__user-about-content"}):
+            data['about'] = self._clean_content(soup.findAll("span", {"class": "profile__user-about-content"})[0].text)
+        data['avatar'] = ''
+        if soup.findAll("div", {"class": "avatar_large"})[0].findAll("img"):
+            data['avatar'] = soup.findAll("div", {"class": "avatar_large"})[0].findAll("img")[0]['data-src']
+        data['reg_date'] = soup.findAll("time", {"class": "hint"})[1]['datetime']
+        data['pluses'] = soup.findAll("span", {"class": "profile__pluses"})[0].text
+        data['minuses'] = soup.findAll("span", {"class": "profile__minuses"})[0].text
+        data['edited_posts'] = soup.findAll("div", {"class": "profile__cedit-info"})[0].findAll("span", {"class": "profile__pluses"})[0].text
+        data['vote_edited_posts'] = soup.findAll("div", {"class": "profile__cedit-info"})[1].findAll("span", {"class": "profile__pluses"})[0].text
+        data['communities'] = self._get_communities(soup)
+        data['rating'] = soup.findAll("div", {"class": "profile__section"})[1].findAll("span", {"class": "profile__digital"})[0]['aria-label'].replace("\u2005", "")
+        data['subscribers'] = soup.findAll("div", {"class": "profile__section"})[1].findAll("span", {"class": "profile__digital"})[1].findAll("b")[0].text
+        data['comments'] = soup.findAll("div", {"class": "profile__section"})[1].findAll("span", {"class": "profile__digital"})[2].findAll("b")[0].text
+        data['posts_count'] = soup.findAll("div", {"class": "profile__section"})[1].findAll("span", {"class": "profile__digital"})[3].findAll("b")[0].text
+        data['posts'] = []
+        for post in soup.findAll("a", {"class": "story__title-link"}):
+            data['posts'].append(post['href'])
+        data['posts_in_hot'] = soup.findAll("div", {"class": "profile__section"})[1].findAll("span", {"class": "profile__digital"})[4].findAll("b")[0].text
+        if self.debug:
+            pprint(data)
+        return data
 
     def save_page(self, file_name, data):
         try:
@@ -106,6 +133,16 @@ class Pikabu_api():
         for clean_word in clean_words:
             content = content.replace(clean_word, '')
         return content
+
+    def _get_communities(self, soup):
+        communities = []
+        for community in soup.findAll("div", {"class": "communities-list_inline"})[0].findAll("span", {"class": "community_inline"}):
+            tmp_data = {}
+            tmp_data['title'] = community.findAll("a")[0].text
+            tmp_data['url'] = 'https://pikabu.ru' + community.findAll("a")[0]['href']
+            tmp_data['img'] = community.findAll("img")[0]['data-src']
+            communities.append(tmp_data)
+        return communities
 
     def save_session(self):
         try:
