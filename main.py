@@ -30,11 +30,16 @@ class Pikabu_api():
         data['title'] = soup.findAll("span", {"class": "story__title-link"})[0].text
         data['content'] = ''
         data['media'] = []
+        data['links'] = []
         if soup.findAll("div", {"class": "story__content-inner"}):
             data['content'] = self._clean_content(soup.findAll("div", {"class": "story__content-inner"})[0].text)
             if soup.findAll("div", {"class": "story__content-inner"})[0].findAll("img"):
                 for img in soup.findAll("div", {"class": "story__content-inner"})[0].findAll("img"):
                     data['media'].append(img['data-large-image'])
+            if soup.findAll("div", {"class": "story__content-inner"})[0].findAll("a"):
+                for img in soup.findAll("div", {"class": "story__content-inner"})[0].findAll("a"):
+                    if img['href'].split('.')[-1] != 'png':
+                        data['links'].append(img['href'])
         data['rating'] = soup.findAll("div", {"class": "story__rating-count"})[0].text
         data['pluses'] = soup.findAll("div", {"class": "page-story__rating"})[0]['data-pluses']
         data['minuses'] = soup.findAll("div", {"class": "page-story__rating"})[0]['data-minuses']
