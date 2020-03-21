@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from pprint import pprint
 
 class Pikabu_api():
-    def __init__(self):
+    def __init__(self, debug=False):
         self._login = False
         self._password = False
         self.session = requests.Session()
@@ -13,7 +13,7 @@ class Pikabu_api():
             'ACCEPT': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'ACCEPT-LANGUAGE': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
         }
-        self.debug = True
+        self.debug = debug
 
     def login(self):
         #login
@@ -24,7 +24,10 @@ class Pikabu_api():
         soup = BeautifulSoup(content, 'html.parser')
         data = {}
         data['title'] = soup.findAll("span", {"class": "story__title-link"})[0].text
-        data['content'] = self._clean_content(soup.findAll("div", {"class": "story__content-inner"})[0].text)
+        if soup.findAll("div", {"class": "story__content-inner"}):
+            data['content'] = self._clean_content(soup.findAll("div", {"class": "story__content-inner"})[0].text)
+        else:
+            data['content'] = ''
         data['rating'] = soup.findAll("div", {"class": "story__rating-count"})[0].text
         data['pluses'] = soup.findAll("div", {"class": "page-story__rating"})[0]['data-pluses']
         data['minuses'] = soup.findAll("div", {"class": "page-story__rating"})[0]['data-minuses']
@@ -163,3 +166,8 @@ class Pikabu_api():
         except Exception as error:
             pprint(error)
             return False
+
+if __name__ == "__main__":
+    test = Pikabu_api(debug=True)
+    test.get_post('https://pikabu.ru/story/podvodim_itogi_2019_goda_7138233')
+    test.get_user('https://pikabu.ru/@moderator')
