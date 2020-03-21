@@ -33,10 +33,13 @@ class Pikabu_api():
         data = {}
         data['title'] = soup.findAll("span", {"class": "story__title-link"})[0].text
         data['content'] = ''
+        data['content_html'] = ''
+        data['content_blocks'] = []
         data['media'] = []
         data['links'] = []
         if soup.findAll("div", {"class": "story__content-inner"}):
             data['content'] = self._clean_content(soup.findAll("div", {"class": "story__content-inner"})[0].text)
+            data['content_html'] = soup.findAll("div", {"class": "story__content-inner"})[0].prettify()
             if soup.findAll("div", {"class": "story__content-inner"})[0].findAll("img"):
                 for img in soup.findAll("div", {"class": "story__content-inner"})[0].findAll("img"):
                     data['media'].append(img['data-large-image'])
@@ -44,6 +47,12 @@ class Pikabu_api():
                 for img in soup.findAll("div", {"class": "story__content-inner"})[0].findAll("a"):
                     if img['href'].split('.')[-1] != 'png':
                         data['links'].append(img['href'])
+            if soup.findAll("div", {"class": "story-block"}):
+                for block in soup.findAll("div", {"class": "story-block"}):
+                    if block.findAll('img'):
+                        data['content_blocks'].append(block.findAll('img')[0]['data-large-image'])
+                    else:
+                        data['content_blocks'].append(self._clean_content(block.text))
         data['rating'] = soup.findAll("div", {"class": "story__rating-count"})[0].text
         data['pluses'] = soup.findAll("div", {"class": "page-story__rating"})[0]['data-pluses']
         data['minuses'] = soup.findAll("div", {"class": "page-story__rating"})[0]['data-minuses']

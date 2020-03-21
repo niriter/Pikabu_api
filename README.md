@@ -26,5 +26,4 @@ pikabu.get_post('https://pikabu.ru/story/podvodim_itogi_2019_goda_7138233')
 ---
 
 ##### TODO:
-- Разбивка контента по блокам
 - Добавить награды пользователя
