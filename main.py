@@ -28,10 +28,13 @@ class Pikabu_api():
         soup = BeautifulSoup(content, 'html.parser')
         data = {}
         data['title'] = soup.findAll("span", {"class": "story__title-link"})[0].text
+        data['content'] = ''
+        data['media'] = []
         if soup.findAll("div", {"class": "story__content-inner"}):
             data['content'] = self._clean_content(soup.findAll("div", {"class": "story__content-inner"})[0].text)
-        else:
-            data['content'] = ''
+            if soup.findAll("div", {"class": "story__content-inner"})[0].findAll("img"):
+                for img in soup.findAll("div", {"class": "story__content-inner"})[0].findAll("img"):
+                    data['media'].append(img['data-large-image'])
         data['rating'] = soup.findAll("div", {"class": "story__rating-count"})[0].text
         data['pluses'] = soup.findAll("div", {"class": "page-story__rating"})[0]['data-pluses']
         data['minuses'] = soup.findAll("div", {"class": "page-story__rating"})[0]['data-minuses']
@@ -202,4 +205,4 @@ class Pikabu_api():
 if __name__ == "__main__":
     test = Pikabu_api(debug=True)
     test.get_post('https://pikabu.ru/story/podvodim_itogi_2019_goda_7138233')
-    test.get_user('https://pikabu.ru/@moderator')
+    # test.get_user('https://pikabu.ru/@moderator')
