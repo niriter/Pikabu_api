@@ -1,7 +1,9 @@
+from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 from pprint import pprint
 import random
+
 
 ### Created by Nikita Kasianenko
 ### project#101
@@ -24,6 +26,8 @@ class Pikabu_api():
         return False
 
     def get_post(self, url):
+        if self.debug:
+            execution_time_start = datetime.now()
         content = self._get_page(url)
         soup = BeautifulSoup(content, 'html.parser')
         data = {}
@@ -57,9 +61,12 @@ class Pikabu_api():
         data['comments'] = self._get_comments(soup)
         if self.debug:
             pprint(data)
+            print('execution time: ' + str(datetime.now() - execution_time_start))
         return content
 
     def get_user(self, url):
+        if self.debug:
+            execution_time_start = datetime.now()
         content = self._get_page(url)
         soup = BeautifulSoup(content, 'html.parser')
         data = {}
@@ -87,6 +94,7 @@ class Pikabu_api():
         data['posts_in_hot'] = soup.findAll("div", {"class": "profile__section"})[1].findAll("span", {"class": "profile__digital"})[4].findAll("b")[0].text
         if self.debug:
             pprint(data)
+            print('execution time: ' + str(datetime.now() - execution_time_start))
         return data
 
     def save_page(self, file_name, data):
