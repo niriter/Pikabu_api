@@ -1,6 +1,6 @@
 #Pikabu Api
 
-Pikabu_api is unofficial API for [pikabu.ru](https://pikabu.ru').
+Pikabu_api is unofficial API for [pikabu.ru]('https://pikabu.ru').
 
 
 ## Installation
