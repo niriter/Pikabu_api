@@ -37,6 +37,9 @@ pikabu.get_most_saved_posts()
 
 #get most disputed posts
 pikabu.get_disputed_posts()
+
+# get communities feed
+pikabu.get_communities_feed_posts()
 ```
 ---
 
