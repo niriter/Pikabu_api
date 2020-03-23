@@ -28,12 +28,18 @@ class Pikabu_api():
         #login
         return False
 
+    def get_best_posts(self, count=13):
+        return self.get_special_posts('best', count)
+
     def get_popular_posts(self, count=13):
+        return self.get_special_posts('', count)
+
+    def get_special_posts(self, type_of_posts='', count=13):
         ### https://pikabu.ru/@moderator и https://pikabu.ru/@SupportTech, если вы это читаете - передайте программистам что бы как минимум 'x-csrf-token' и 'PHPSESS' не были пустыми
         if self.debug:
             execution_time_start = datetime.now()
         token = self._generate_token()
-        basic_url = 'https://pikabu.ru/?twitmode=1&of=v2&page='
+        basic_url = 'https://pikabu.ru/'+str(type_of_posts)+'?twitmode=1&of=v2&page='
         tmp_headers = {**self.headers, 'x-csrf-token': token, 'cookie': f'PHPSESS={token};'}
         posts = []
         import math
@@ -273,4 +279,5 @@ if __name__ == "__main__":
     test = Pikabu_api(debug=True)
     # test.get_post('https://pikabu.ru/story/podvodim_itogi_2019_goda_7138233')
     # test.get_user('https://pikabu.ru/@moderator')
-    test.get_popular_posts()
+    # test.get_popular_posts()
+    test.get_best_posts()
