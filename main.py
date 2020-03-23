@@ -1,8 +1,11 @@
-from datetime import datetime
-import requests
 from bs4 import BeautifulSoup
+from datetime import datetime
 from pprint import pprint
 import random
+import requests
+import string
+import json
+import time
 
 
 ### Created by Nikita Kasianenko
@@ -25,49 +28,36 @@ class Pikabu_api():
         #login
         return False
 
+    def get_popular_posts(self, count=13):
+        ### https://pikabu.ru/@moderator и https://pikabu.ru/@SupportTech, если вы это читаете - передайте программистам что бы как минимум 'x-csrf-token' и 'PHPSESS' не были пустыми
+        if self.debug:
+            execution_time_start = datetime.now()
+        token = self._generate_token()
+        basic_url = 'https://pikabu.ru/?twitmode=1&of=v2&page='
+        tmp_headers = {**self.headers, 'x-csrf-token': token, 'cookie': f'PHPSESS={token};'}
+        posts = []
+        import math
+        for page in range(1, math.ceil(count / 13)+1):
+            content = self._get_page(basic_url+str(page), tmp_headers)
+            content = json.loads(self._clean_content(content))
+            for post in content['data']['stories']:
+                if len(posts) == count:
+                    break
+                soup = BeautifulSoup(post['html'], 'html.parser')
+                posts.append(self._parse_post_content(soup, True))
+            if math.ceil(count / 13) > 1:
+                time.sleep(5)
+        if self.debug:
+            pprint(posts)
+            print('execution time: ' + str(datetime.now() - execution_time_start))
+        return posts
+
     def get_post(self, url):
         if self.debug:
             execution_time_start = datetime.now()
         content = self._get_page(url)
         soup = BeautifulSoup(content, 'html.parser')
-        data = {}
-        data['title'] = soup.findAll("span", {"class": "story__title-link"})[0].text
-        data['content'] = ''
-        data['content_html'] = ''
-        data['content_blocks'] = []
-        data['media'] = []
-        data['links'] = []
-        if soup.findAll("div", {"class": "story__content-inner"}):
-            data['content'] = self._clean_content(soup.findAll("div", {"class": "story__content-inner"})[0].text)
-            data['content_html'] = soup.findAll("div", {"class": "story__content-inner"})[0].prettify()
-            if soup.findAll("div", {"class": "story__content-inner"})[0].findAll("img"):
-                for img in soup.findAll("div", {"class": "story__content-inner"})[0].findAll("img"):
-                    data['media'].append(img['data-large-image'])
-            if soup.findAll("div", {"class": "story__content-inner"})[0].findAll("a"):
-                for img in soup.findAll("div", {"class": "story__content-inner"})[0].findAll("a"):
-                    if img['href'].split('.')[-1] != 'png':
-                        data['links'].append(img['href'])
-            if soup.findAll("div", {"class": "story-block"}):
-                for block in soup.findAll("div", {"class": "story-block"}):
-                    if block.findAll('img'):
-                        data['content_blocks'].append(block.findAll('img')[0]['data-large-image'])
-                    else:
-                        data['content_blocks'].append(self._clean_content(block.text))
-        data['rating'] = soup.findAll("div", {"class": "story__rating-count"})[0].text
-        data['pluses'] = soup.findAll("div", {"class": "page-story__rating"})[0]['data-pluses']
-        data['minuses'] = soup.findAll("div", {"class": "page-story__rating"})[0]['data-minuses']
-        data['post_id'] = soup.findAll("section", {"class": "comments_show"})[0]['data-story-id']
-        data['post_url'] = url
-        data['username'] = soup.findAll("section", {"class": "comments_show"})[0]['data-story-username']
-        data['user_url'] = "https://pikabu.ru"+soup.findAll("a", {"class": "user__nick"})[0]['href']
-        data['comments_count'] = soup.findAll("section", {"class": "comments_show"})[0]['data-total']
-        data['datetime'] = soup.findAll("time", {"class": "story__datetime"})[0]['datetime']
-        data['save'] = soup.findAll("span", {"class": "story__save-count"})[0].text
-        data['share'] = soup.findAll("span", {"class": "story__share-count"})[0].text
-        data['tags'] = []
-        for tag in soup.findAll("div", {"class": "story__tags"})[0].findChildren():
-            data['tags'].append({'name': tag.text, 'url': 'https://pikabu.ru'+tag['href']})
-        data['comments'] = self._get_comments(soup)
+        data = self._parse_post_content(soup, True)
         if self.debug:
             pprint(data)
             print('execution time: ' + str(datetime.now() - execution_time_start))
@@ -117,12 +107,16 @@ class Pikabu_api():
             print('Some error with save file')
             pprint(error)
 
-    def _get_page(self, url):
+    def _get_page(self, url, headers={}):
         try:
-            answear = self.session.get(url, headers=self.headers)
+            if not headers:
+                headers = self.headers
+            answear = self.session.get(url, headers=headers)
         except Exception as error:
             print("Server aborted connection")
             pprint(error)
+            exit()
+
         if answear:
             print('Success!')
         else:
@@ -204,6 +198,57 @@ class Pikabu_api():
         ]
         return random.choice(user_agent_list)
 
+    def _generate_token(self, length=30):
+        letters = string.ascii_lowercase
+        return ''.join(random.choice(letters) for i in range(length))
+
+    def _parse_post_content(self, soup, parse_from_feed=False):
+        data = {}
+        data['title'] = soup.findAll("header", {"class": "story__header"})[0].text
+        data['content'] = ''
+        data['content_html'] = ''
+        data['content_blocks'] = []
+        data['media'] = []
+        data['links'] = []
+        if soup.findAll("div", {"class": "story__content-inner"}):
+            data['content'] = self._clean_content(soup.findAll("div", {"class": "story__content-inner"})[0].text)
+            data['content_html'] = soup.findAll("div", {"class": "story__content-inner"})[0].prettify()
+            if soup.findAll("div", {"class": "story__content-inner"})[0].findAll("img"):
+                for img in soup.findAll("div", {"class": "story__content-inner"})[0].findAll("img"):
+                    data['media'].append(img['data-large-image'])
+            if soup.findAll("div", {"class": "story__content-inner"})[0].findAll("a"):
+                for img in soup.findAll("div", {"class": "story__content-inner"})[0].findAll("a"):
+                    if img['href'].split('.')[-1] != 'png':
+                        data['links'].append(img['href'])
+            if soup.findAll("div", {"class": "story-block"}):
+                for block in soup.findAll("div", {"class": "story-block"}):
+                    if block.findAll('img'):
+                        data['content_blocks'].append(block.findAll('img')[0]['data-large-image'])
+                    else:
+                        data['content_blocks'].append(self._clean_content(block.text))
+        data['rating'] = soup.findAll("div", {"class": "story__rating-count"})[0].text
+        if not parse_from_feed:
+            data['pluses'] = soup.findAll("div", {"class": "page-story__rating"})[0]['data-pluses']
+            data['minuses'] = soup.findAll("div", {"class": "page-story__rating"})[0]['data-minuses']
+            data['post_id'] = soup.findAll("section", {"class": "comments_show"})[0]['data-story-id']
+            data['username'] = soup.findAll("section", {"class": "comments_show"})[0]['data-story-username']
+            data['comments_count'] = soup.findAll("section", {"class": "comments_show"})[0]['data-total']
+            data['save'] = soup.findAll("span", {"class": "story__save-count"})[0].text
+            data['share'] = soup.findAll("span", {"class": "story__share-count"})[0].text
+        else:
+            data['post_id'] = soup.findAll("div", {"class": "story__rating-block"})[0]['data-story-id']
+            data['username'] = soup.findAll("a", {"class": "user__nick"})[0].text
+            data['comments_count'] = soup.findAll("span", {"class": "story__comments-link-count"})[0].text
+        data['user_url'] = "https://pikabu.ru" + soup.findAll("a", {"class": "user__nick"})[0]['href']
+        data['datetime'] = soup.findAll("time", {"class": "story__datetime"})[0]['datetime']
+        data['url'] = soup.findAll("a", {"class": "story__comments-link"})[0]['href'].split("#")[0]
+        data['tags'] = []
+        for tag in soup.findAll("div", {"class": "story__tags"})[0].findChildren():
+            data['tags'].append({'name': tag.text, 'url': 'https://pikabu.ru' + tag['href']})
+        if not parse_from_feed:
+            data['comments'] = self._get_comments(soup)
+        return data
+
     def save_session(self):
         try:
             import pickle
@@ -226,5 +271,6 @@ class Pikabu_api():
 
 if __name__ == "__main__":
     test = Pikabu_api(debug=True)
-    test.get_post('https://pikabu.ru/story/podvodim_itogi_2019_goda_7138233')
+    # test.get_post('https://pikabu.ru/story/podvodim_itogi_2019_goda_7138233')
     # test.get_user('https://pikabu.ru/@moderator')
+    test.get_popular_posts()
