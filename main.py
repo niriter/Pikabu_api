@@ -28,6 +28,9 @@ class Pikabu_api():
         #login
         return False
 
+    def get_disputed_posts(self, count=13):
+        return self.get_special_posts('disputed', count)
+
     def get_most_saved_posts(self, count=13):
         return self.get_special_posts('most-saved', count)
 
@@ -288,4 +291,5 @@ if __name__ == "__main__":
     # test.get_popular_posts()
     # test.get_best_posts()
     # test.get_new_posts()
-    test.get_most_saved_posts()
+    # test.get_most_saved_posts()
+    test.get_disputed_posts()

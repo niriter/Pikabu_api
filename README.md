@@ -34,6 +34,9 @@ pikabu.get_new_posts()
 
 #get most saved posts
 pikabu.get_most_saved_posts()
+
+#get most disputed posts
+pikabu.get_disputed_posts()
 ```
 ---
 
