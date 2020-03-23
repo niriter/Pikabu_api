@@ -28,6 +28,9 @@ pikabu.get_popular_posts()
 
 #get best posts
 pikabu.get_best_posts()
+
+#get new posts
+pikabu.get_new_posts()
 ```
 ---
 

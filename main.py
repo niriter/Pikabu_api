@@ -28,6 +28,9 @@ class Pikabu_api():
         #login
         return False
 
+    def get_new_posts(self, count=13):
+        return self.get_special_posts('new', count)
+
     def get_best_posts(self, count=13):
         return self.get_special_posts('best', count)
 
@@ -280,4 +283,5 @@ if __name__ == "__main__":
     # test.get_post('https://pikabu.ru/story/podvodim_itogi_2019_goda_7138233')
     # test.get_user('https://pikabu.ru/@moderator')
     # test.get_popular_posts()
-    test.get_best_posts()
+    # test.get_best_posts()
+    test.get_new_posts()
