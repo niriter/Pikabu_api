@@ -28,6 +28,9 @@ class Pikabu_api():
         #login
         return False
 
+    def get_most_saved_posts(self, count=13):
+        return self.get_special_posts('most-saved', count)
+
     def get_new_posts(self, count=13):
         return self.get_special_posts('new', count)
 
@@ -284,4 +287,5 @@ if __name__ == "__main__":
     # test.get_user('https://pikabu.ru/@moderator')
     # test.get_popular_posts()
     # test.get_best_posts()
-    test.get_new_posts()
+    # test.get_new_posts()
+    test.get_most_saved_posts()

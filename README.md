@@ -31,6 +31,9 @@ pikabu.get_best_posts()
 
 #get new posts
 pikabu.get_new_posts()
+
+#get most saved posts
+pikabu.get_most_saved_posts()
 ```
 ---
 
