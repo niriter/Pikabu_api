@@ -287,6 +287,92 @@ class Pikabu_api():
             pprint(error)
             return False
 
+    class Pikabu_app_api:
+        def get_page(self):
+            #NOT WORKING
+            test = self.PikabuPostRequest()
+            attributes = []
+            page_id = 7138233
+            test.PikabuPostRequest("page", attributes)
+
+        class PikabuPostRequest:
+            def PikabuPostRequest(self, request_url, attributes):
+                requester = self.PikabuRequest()
+                requester.PikabuRequest("https://api.pikabu.ru/v1/", request_url, attributes)
+                page_id = 7138233
+                requester.buildParams(["page_id", page_id])
+                # setHttpMethod(HttpHelper.METHOD_POST);
+
+            class PikabuRequest():
+                def __init__(self):
+                    self.f42435a = ''
+                    self.url = ''
+                    self.method = ''
+                    self.headers = {}
+
+                def nativeBuildHash(self, context, data_array, str1, str2):
+                    from ctypes import *
+                    pprint(context, data_array, str1, str2)
+                    libc = CDLL("libnative-lib.so")
+                    Java_ru_pikabu_android_server_PikabuRequest_nativeBuildHash = libc.Java_ru_pikabu_android_server_PikabuRequest_nativeBuildHash
+                    pprint(Java_ru_pikabu_android_server_PikabuRequest_nativeBuildHash(context, data_array, str1, str2))
+                    return ''
+
+                def PikabuRequest(self, str1, str2, attributes):
+                    url = str1 + str2
+                    if (not attributes) and (len(attributes) == 0):
+                        url = url + ""
+                    else:
+                        # add attributes to url
+                        url = url
+                    self.url = url
+                    self.method = 'POST'
+                    self.headers['Content-Type'] = 'application/json'
+                    self.headers['DeviceId'] = ''  # get device-id
+                    self.f42435a = str2
+                    return
+
+                def parseResponse(self, ResponseInfo):
+                    if ResponseInfo.status_code == 500:
+                        return False
+                    else:
+                        return True
+
+                def buildParams(self, data):
+                    return self.mo36477a(data)
+
+                def mo36477a(self, data):
+                    return self.build_data(data, self.f42435a, [])
+
+                def build_data(self, data, url, var):
+                    valueOf = str(time.time()).replace('.', '')[:13]
+                    a = self.combine_list(data, ["new_sort", 1, "id", "iws"])
+                    a = self.combine_list(a, ["hash", self.some_func(a, valueOf, url, var), "token", valueOf])
+                    return a
+
+                def combine_list(self, array, array2):
+                    array3 = []
+                    for elem in array:
+                        array3.append(elem)
+                    for elem in array2:
+                        array3.append(elem)
+                    return array3
+
+                def some_func(self, data, time, url, var):
+                    arrayList = {}
+                    arrayList2 = []
+                    i = 1
+                    for i in range(0, len(data), 2):
+                        pprint(i)
+                        arrayList[data[i]] = data[(i + 1)]
+                        i = i + 1
+                    # m52551a(arrayList, arrayList2, var)
+                    nativeBuildHash = self.nativeBuildHash('', arrayList, time, url)
+                    if nativeBuildHash:
+                        return nativeBuildHash.strip()
+                    else:
+                        return ""
+
 if __name__ == "__main__":
     test = Pikabu_api(debug=True)
     # test.get_post('https://pikabu.ru/story/podvodim_itogi_2019_goda_7138233')
