@@ -2,3 +2,5 @@ post.html
 .idea
 __pycache__
 logs.txt
+.pytest_cache
+test.py
