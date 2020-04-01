@@ -4,8 +4,8 @@ from classes.Feed import Feed
 
 def test_popular_feed():
     main = Pikabu_api()
-    feed = main.get_popular_posts()
     global feed
+    feed = main.get_popular_posts()
     assert feed
 
 def test_class():
