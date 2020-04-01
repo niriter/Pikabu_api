@@ -1,6 +1,5 @@
 class Post:
     def __init__(self):
-        data = {}
         self.title = ''
         self.content = ''
         self.content_html = ''
@@ -259,3 +258,30 @@ class Post:
         return self.append_comment(comment)
 
     #End functions to set object data
+
+    def print_values(self):
+        from pprint import pprint
+        print("Title: " + self.get_title())
+        print("Content: " + self.get_content())
+        print("Content_html: " + self.get_content_html())
+        print("Content_blocks: ")
+        pprint(self.get_content_blocks())
+        print("Media: ")
+        pprint(self.get_media())
+        print("Links: ")
+        pprint(self.get_links())
+        print("Rating: " + self.get_rating())
+        print("Pluses: " + str(self.get_pluses()))
+        print("Minuses: " + str(self.get_minuses()))
+        print("Post_id: " + str(self.get_post_id()))
+        print("Username: " + self.get_username())
+        print("User_url: " + self.get_user_url())
+        print("Comments_count: " + str(self.get_comments_count()))
+        print("Saves: " + str(self.get_save()))
+        print("Shares: " + str(self.get_share()))
+        print("Datetime: " + self.get_datetime())
+        print("Url: " + self.get_url())
+        print("Tags: ")
+        pprint(self.get_tags())
+        print("Comments: ")
+        pprint(self.get_comments())
