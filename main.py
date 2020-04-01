@@ -1,11 +1,14 @@
 from bs4 import BeautifulSoup
 from datetime import datetime
+from parsers.Post import Parse_Post
+from parsers.User import Parse_User
 from pprint import pprint
 import random
 import requests
 import string
 import json
 import time
+import logging
 
 
 ### Created by Nikita Kasianenko
@@ -13,6 +16,9 @@ import time
 
 class Pikabu_api():
     def __init__(self, debug=False):
+        self.logging_level = logging.INFO
+        self._set_logger()
+        self.logger.info("Start init")
         self._login = False
         self._password = False
         self.session = requests.Session()
@@ -23,6 +29,7 @@ class Pikabu_api():
             'ACCEPT-LANGUAGE': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
         }
         self.debug = debug
+        self.logger.info("End init")
 
     def login(self):
         #login
@@ -48,8 +55,8 @@ class Pikabu_api():
 
     def get_special_posts(self, type_of_posts='', count=13):
         ### https://pikabu.ru/@moderator и https://pikabu.ru/@SupportTech, если вы это читаете - передайте программистам что бы как минимум 'x-csrf-token' и 'PHPSESS' не были пустыми
-        if self.debug:
-            execution_time_start = datetime.now()
+        self.logger.info(f'get_special_posts(type_of_posts:{type_of_posts}')
+        execution_time_start = datetime.now()
         token = self._generate_token()
         basic_url = 'https://pikabu.ru/'+str(type_of_posts)+'?twitmode=1&of=v2&page='
         tmp_headers = {**self.headers, 'x-csrf-token': token, 'cookie': f'PHPSESS={token};'}
@@ -61,57 +68,36 @@ class Pikabu_api():
             for post in content['data']['stories']:
                 if len(posts) == count:
                     break
-                soup = BeautifulSoup(post['html'], 'html.parser')
-                posts.append(self._parse_post_content(soup, True))
+                wrapper = Parse_Post(True, self.debug)
+                posts.append(wrapper.parse(BeautifulSoup(post['html'], 'html.parser')))
+                del wrapper
             if math.ceil(count / 13) > 1:
                 time.sleep(5)
         if self.debug:
             pprint(posts)
-            print('execution time: ' + str(datetime.now() - execution_time_start))
+        self.logger.info('get_special_posts - execution time: ' + str(datetime.now() - execution_time_start))
         return posts
 
     def get_post(self, url):
-        if self.debug:
-            execution_time_start = datetime.now()
-        content = self._get_page(url)
-        soup = BeautifulSoup(content, 'html.parser')
-        data = self._parse_post_content(soup, True)
-        if self.debug:
-            pprint(data)
-            print('execution time: ' + str(datetime.now() - execution_time_start))
-        return content
+        self.logger.info(f'get_post(url:{url}')
+
+        execution_time_start = datetime.now()
+        soup = BeautifulSoup(self._get_page(url), 'html.parser')
+        wrapper = Parse_Post(False, self.debug)
+        data = wrapper.parse(soup)
+
+        self.logger.info('get_post - execution time: ' + str(datetime.now() - execution_time_start))
+        return data
 
     def get_user(self, url):
-        if self.debug:
-            execution_time_start = datetime.now()
+        self.logger.info(f'get_user(url:{url}')
+
+        execution_time_start = datetime.now()
         content = self._get_page(url)
-        soup = BeautifulSoup(content, 'html.parser')
-        data = {}
-        data['nickname'] = soup.findAll("span", {"itemprop": "additionalName"})[0].text
-        data['url'] = url
-        data['about'] = ''
-        if soup.findAll("span", {"class": "profile__user-about-content"}):
-            data['about'] = self._clean_content(soup.findAll("span", {"class": "profile__user-about-content"})[0].text)
-        data['avatar'] = ''
-        if soup.findAll("div", {"class": "avatar_large"})[0].findAll("img"):
-            data['avatar'] = soup.findAll("div", {"class": "avatar_large"})[0].findAll("img")[0]['data-src']
-        data['reg_date'] = soup.findAll("time", {"class": "hint"})[1]['datetime']
-        data['pluses'] = soup.findAll("span", {"class": "profile__pluses"})[0].text
-        data['minuses'] = soup.findAll("span", {"class": "profile__minuses"})[0].text
-        data['edited_posts'] = soup.findAll("div", {"class": "profile__cedit-info"})[0].findAll("span", {"class": "profile__pluses"})[0].text
-        data['vote_edited_posts'] = soup.findAll("div", {"class": "profile__cedit-info"})[1].findAll("span", {"class": "profile__pluses"})[0].text
-        data['communities'] = self._get_communities(soup)
-        data['rating'] = soup.findAll("div", {"class": "profile__section"})[1].findAll("span", {"class": "profile__digital"})[0]['aria-label'].replace("\u2005", "")
-        data['subscribers'] = soup.findAll("div", {"class": "profile__section"})[1].findAll("span", {"class": "profile__digital"})[1].findAll("b")[0].text
-        data['comments'] = soup.findAll("div", {"class": "profile__section"})[1].findAll("span", {"class": "profile__digital"})[2].findAll("b")[0].text
-        data['posts_count'] = soup.findAll("div", {"class": "profile__section"})[1].findAll("span", {"class": "profile__digital"})[3].findAll("b")[0].text
-        data['posts'] = []
-        for post in soup.findAll("a", {"class": "story__title-link"}):
-            data['posts'].append(post['href'])
-        data['posts_in_hot'] = soup.findAll("div", {"class": "profile__section"})[1].findAll("span", {"class": "profile__digital"})[4].findAll("b")[0].text
-        if self.debug:
-            pprint(data)
-            print('execution time: ' + str(datetime.now() - execution_time_start))
+        parse_user = Parse_User(self.debug)
+        data = parse_user.parse(BeautifulSoup(content, 'html.parser'), url)
+
+        self.logger.info('get_user - execution time: ' + str(datetime.now() - execution_time_start))
         return data
 
     def save_page(self, file_name, data):
@@ -129,62 +115,29 @@ class Pikabu_api():
         try:
             if not headers:
                 headers = self.headers
-            answear = self.session.get(url, headers=headers)
+            answer = self.session.get(url, headers=headers)
         except Exception as error:
-            print("Server aborted connection")
-            pprint(error)
+            self.logger.error(f"Server aborted connection (Error: {error})")
             exit()
 
-        if answear:
-            print('Success!')
+        if answer:
+            self.logger.info("Server returned answer")
         else:
-            print('An error has occurred.')
-            return False
+            self.logger.error("Server not returned answer")
+            exit()
 
-        if answear.status_code == 200:
-            print("Success parsed page")
+        if answer.status_code == 200:
+            self.logger.info("Page status_code: 200")
         else:
-            print("Some error excepted. Server returned "+str(answear.status_code)+" code")
-            return False
-
-        return answear.text
-
-    def _get_comments(self, soup, indent=0):
-        comments=[]
-        for comment in soup.findAll("div", {"class": "comment", "data-indent": indent}):
-            tmp_comment = {}
-            tmp_comment['author_name'] = comment.findAll("div", {"class": "comment__user"})[0]['data-name']
-            tmp_comment['author_url'] = 'https://pikabu.ru'+comment.findAll("a", {"class": "user"})[0]['href']
-            tmp_comment['datetime'] = comment.findAll("time", {"class": "comment__datetime"})[0]['datetime']
-            tmp_comment['link'] = comment.findAll("a", {"class": "comment__tool", "data-role": "link"})[0]['href']
-            tmp_comment['rating'] = comment.findAll("div", {"class": "comment__rating-count"})[0].text
-            tmp_comment['formatted_text'] = self._clean_content(comment.findAll("div", {"class": "comment__content"})[0].text)
-            tmp = comment.findAll("div", {"class": "comment__rating-count"})[0]['aria-label']
-            tmp_comment['pluses'] = [int(s) for s in tmp.split() if s.isdigit()][0]
-            tmp_comment['minuses'] = [int(s) for s in tmp.split() if s.isdigit()][1]
-            tmp_comment['subcomments'] = self._get_comments(comment.findAll("div", {"class": "comment__children"})[0], indent+1) if self._has_subcomments(comment) else []
-            comments.append(tmp_comment)
-            del tmp_comment
-        return comments
-
-    def _has_subcomments(self, soup):
-        return True if soup.findAll("div", {"class": "comment__children"}) else False
+            self.logger.error(f"Page status_code: {str(answer.status_code)}")
+            exit()
+        return answer.text
 
     def _clean_content(self, content):
         clean_words = ['\n', '\r', '\t']
         for clean_word in clean_words:
             content = content.replace(clean_word, '')
         return content
-
-    def _get_communities(self, soup):
-        communities = []
-        for community in soup.findAll("div", {"class": "communities-list_inline"})[0].findAll("span", {"class": "community_inline"}):
-            tmp_data = {}
-            tmp_data['title'] = community.findAll("a")[0].text
-            tmp_data['url'] = 'https://pikabu.ru' + community.findAll("a")[0]['href']
-            tmp_data['img'] = community.findAll("img")[0]['data-src']
-            communities.append(tmp_data)
-        return communities
 
     def _rotate_useragent(self):
         user_agent_list = [
@@ -214,67 +167,34 @@ class Pikabu_api():
             'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)',
             'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0; .NET CLR 2.0.50727; .NET CLR 3.0.4506.2152; .NET CLR 3.5.30729)'
         ]
-        return random.choice(user_agent_list)
+        c = random.choice(user_agent_list)
+        self.logger.info(f"User-agent: {c}")
+        return c
 
     def _generate_token(self, length=30):
         letters = string.ascii_lowercase
-        return ''.join(random.choice(letters) for i in range(length))
+        t = ''.join(random.choice(letters) for i in range(length))
+        self.logger.info(f"Generated token ({t})")
+        return t
 
-    def _parse_post_content(self, soup, parse_from_feed=False):
-        data = {}
-        data['title'] = soup.findAll("header", {"class": "story__header"})[0].text
-        data['content'] = ''
-        data['content_html'] = ''
-        data['content_blocks'] = []
-        data['media'] = []
-        data['links'] = []
-        if soup.findAll("div", {"class": "story__content-inner"}):
-            data['content'] = self._clean_content(soup.findAll("div", {"class": "story__content-inner"})[0].text)
-            data['content_html'] = soup.findAll("div", {"class": "story__content-inner"})[0].prettify()
-            if soup.findAll("div", {"class": "story__content-inner"})[0].findAll("img"):
-                for img in soup.findAll("div", {"class": "story__content-inner"})[0].findAll("img"):
-                    data['media'].append(img['data-large-image'])
-            if soup.findAll("div", {"class": "story__content-inner"})[0].findAll("a"):
-                for img in soup.findAll("div", {"class": "story__content-inner"})[0].findAll("a"):
-                    if img['href'].split('.')[-1] != 'png':
-                        data['links'].append(img['href'])
-            if soup.findAll("div", {"class": "story-block"}):
-                for block in soup.findAll("div", {"class": "story-block"}):
-                    if block.findAll('img'):
-                        data['content_blocks'].append(block.findAll('img')[0]['data-large-image'])
-                    else:
-                        data['content_blocks'].append(self._clean_content(block.text))
-        data['rating'] = soup.findAll("div", {"class": "story__rating-count"})[0].text
-        if not parse_from_feed:
-            data['pluses'] = soup.findAll("div", {"class": "page-story__rating"})[0]['data-pluses']
-            data['minuses'] = soup.findAll("div", {"class": "page-story__rating"})[0]['data-minuses']
-            data['post_id'] = soup.findAll("section", {"class": "comments_show"})[0]['data-story-id']
-            data['username'] = soup.findAll("section", {"class": "comments_show"})[0]['data-story-username']
-            data['comments_count'] = soup.findAll("section", {"class": "comments_show"})[0]['data-total']
-            data['save'] = soup.findAll("span", {"class": "story__save-count"})[0].text
-            data['share'] = soup.findAll("span", {"class": "story__share-count"})[0].text
-        else:
-            data['post_id'] = soup.findAll("div", {"class": "story__rating-block"})[0]['data-story-id']
-            data['username'] = soup.findAll("a", {"class": "user__nick"})[0].text
-            data['comments_count'] = soup.findAll("span", {"class": "story__comments-link-count"})[0].text
-        data['user_url'] = "https://pikabu.ru" + soup.findAll("a", {"class": "user__nick"})[0]['href']
-        data['datetime'] = soup.findAll("time", {"class": "story__datetime"})[0]['datetime']
-        data['url'] = soup.findAll("a", {"class": "story__comments-link"})[0]['href'].split("#")[0]
-        data['tags'] = []
-        for tag in soup.findAll("div", {"class": "story__tags"})[0].findChildren():
-            data['tags'].append({'name': tag.text, 'url': 'https://pikabu.ru' + tag['href']})
-        if not parse_from_feed:
-            data['comments'] = self._get_comments(soup)
-        return data
+    def _set_logger(self):
+        self.logger = logging.getLogger('Pikabu-api')
+        self.logger.setLevel(self.logging_level)
+        del self.logging_level
+        fh = logging.FileHandler('logs.txt', mode='w')
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        fh.setFormatter(formatter)
+        self.logger.addHandler(fh)
 
     def save_session(self):
         try:
             import pickle
             with open(self.session_file, 'wb') as f:
                 pickle.dump(self.session.cookies, f)
+            self.logger.info(f"Session saved to {self.session_file}")
             return True
         except Exception as error:
-            pprint(error)
+            self.logger.error(f"Session not saved to {self.session_file}; Error: {error}")
             return False
 
     def load_session(self):
@@ -282,12 +202,13 @@ class Pikabu_api():
             import pickle
             with open(self.session_file, 'rb') as f:
                 self.session.cookies.update(pickle.load(f))
+            self.logger.info(f"Session loaded from {self.session_file}")
             return True
         except Exception as error:
-            pprint(error)
+            self.logger.error(f"Session not loaded from {self.session_file}; Error: {error}")
             return False
 
-    class Pikabu_app_api:
+    '''class Pikabu_app_api:
         def get_page(self):
             #NOT WORKING
             test = self.PikabuPostRequest()
@@ -372,6 +293,7 @@ class Pikabu_api():
                         return nativeBuildHash.strip()
                     else:
                         return ""
+'''
 
 if __name__ == "__main__":
     test = Pikabu_api(debug=True)
@@ -382,4 +304,4 @@ if __name__ == "__main__":
     # test.get_new_posts()
     # test.get_most_saved_posts()
     # test.get_disputed_posts()
-    test.get_communities_feed_posts()
+    # test.get_communities_feed_posts()
