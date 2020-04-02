@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 from datetime import datetime
+from parsers.Feed import Parse_Feed
 from parsers.Post import Parse_Post
 from parsers.User import Parse_User
 from pprint import pprint
@@ -54,29 +55,26 @@ class Pikabu_api():
         return self.get_special_posts('', count)
 
     def get_special_posts(self, type_of_posts='', count=13):
-        ### https://pikabu.ru/@moderator и https://pikabu.ru/@SupportTech, если вы это читаете - передайте программистам что бы как минимум 'x-csrf-token' и 'PHPSESS' не были пустыми
         self.logger.info(f'get_special_posts(type_of_posts:{type_of_posts}')
         execution_time_start = datetime.now()
+
+        url_template = 'https://pikabu.ru/'+str(type_of_posts)
+        basic_url = url_template+'?twitmode=1&of=v2&page='
+
         token = self._generate_token()
-        basic_url = 'https://pikabu.ru/'+str(type_of_posts)+'?twitmode=1&of=v2&page='
         tmp_headers = {**self.headers, 'x-csrf-token': token, 'cookie': f'PHPSESS={token};'}
-        posts = []
+
+        parser = Parse_Feed(url_template, count)
+        parser.parse_feed_info(BeautifulSoup(self._get_page(url_template), 'html.parser'))
+
         import math
         for page in range(1, math.ceil(count / 13)+1):
             content = self._get_page(basic_url+str(page), tmp_headers)
-            content = json.loads(self._clean_content(content))
-            for post in content['data']['stories']:
-                if len(posts) == count:
-                    break
-                wrapper = Parse_Post(True, self.debug)
-                posts.append(wrapper.parse(BeautifulSoup(post['html'], 'html.parser')))
-                del wrapper
+            parser.parse_from_json(content)
             if math.ceil(count / 13) > 1:
                 time.sleep(5)
-        if self.debug:
-            pprint(posts)
         self.logger.info('get_special_posts - execution time: ' + str(datetime.now() - execution_time_start))
-        return posts
+        return parser.get_feed()
 
     def get_post(self, url):
         self.logger.info(f'get_post(url:{url}')
@@ -299,7 +297,7 @@ if __name__ == "__main__":
     test = Pikabu_api(debug=True)
     # test.get_post('https://pikabu.ru/story/podvodim_itogi_2019_goda_7138233')
     # test.get_user('https://pikabu.ru/@moderator')
-    # test.get_popular_posts()
+    test.get_popular_posts()
     # test.get_best_posts()
     # test.get_new_posts()
     # test.get_most_saved_posts()
