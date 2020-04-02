@@ -20,6 +20,9 @@ class Feed:
             self.current_post_number += 1
             return self.posts[self.current_post_number]
 
+    def __len__(self):
+        return len(self.posts)
+
     def get_url(self):
         return self.url
 
