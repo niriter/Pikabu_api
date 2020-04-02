@@ -2,11 +2,8 @@ import pytest
 from main import Pikabu_api
 from classes.Feed import Feed
 
-def test_popular_feed():
-    main = Pikabu_api()
-    global feed
-    feed = main.get_popular_posts()
-    assert feed
+main = Pikabu_api()
+feed = main.get_popular_posts()
 
 def test_class():
     global feed
@@ -22,15 +19,15 @@ def test_name():
 
 def test_posts_count():
     global feed
-    assert feed.posts_count()
+    assert feed.get_posts_count()
 
 def test_posts_len_count():
     global feed
-    assert feed.posts_count() == len(feed)
+    assert feed.get_posts_count() == len(feed)
 
 def test_about():
     global feed
-    if feed.has_about():
+    if feed.get_has_about():
         assert feed.get_about()
     else:
         assert True
