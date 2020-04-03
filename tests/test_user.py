@@ -17,9 +17,9 @@ def test_url():
     global user
     assert user.get_url()
 
-def test_about():
-    global user
-    assert user.get_about()
+# def test_about():
+#     global user
+#     assert user.get_about()
 
 def test_avatar():
     global user
