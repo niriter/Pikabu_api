@@ -41,8 +41,8 @@ class Parse_Post():
             self.post.set_post_id(soup.findAll("section", {"class": "comments_show"})[0]['data-story-id'])
             self.post.set_username(soup.findAll("section", {"class": "comments_show"})[0]['data-story-username'])
             self.post.set_comments_count(soup.findAll("section", {"class": "comments_show"})[0]['data-total'])
-            self.post.set_save(soup.findAll("span", {"class": "story__save-count"})[0].text)
-            self.post.set_share(soup.findAll("span", {"class": "story__share-count"})[0].text)
+            self.post.set_saves(soup.findAll("span", {"class": "story__save-count"})[0].text)
+            self.post.set_shares(soup.findAll("span", {"class": "story__share-count"})[0].text)
             parent_comment = Parse_Comment()
             self.post.set_comments(parent_comment.parse(soup))
         else:

@@ -13,8 +13,8 @@ class Post:
         self.username = ''
         self.user_url = ''
         self.comments_count = 0
-        self.save = 0
-        self.share = 0
+        self.saves = 0
+        self.shares = 0
         self.datetime = ''
         self.url = ''
         self.tags = []
@@ -61,11 +61,11 @@ class Post:
     def get_comments_count(self):
         return self.comments_count
 
-    def get_save(self):
-        return self.save
+    def get_saves(self):
+        return self.saves
 
-    def get_share(self):
-        return self.share
+    def get_shares(self):
+        return self.shares
 
     def get_datetime(self):
         return self.datetime
@@ -118,17 +118,11 @@ class Post:
     def comments_count(self):
         return self.get_comments_count()
 
-    def save(self):
-        return self.get_save()
-
     def saves(self):
-        return self.get_save()
-
-    def share(self):
-        return self.get_share()
+        return self.get_saves()
 
     def shares(self):
-        return self.get_share()
+        return self.get_shares()
 
     def datetime(self):
         return self.get_datetime()
@@ -198,12 +192,12 @@ class Post:
         self.comments_count = comments_count
         return True
 
-    def set_save(self, save):
-        self.save = save
+    def set_saves(self, saves):
+        self.saves = saves
         return True
 
-    def set_share(self, share):
-        self.share = share
+    def set_shares(self, shares):
+        self.shares = shares
         return True
 
     def set_datetime(self, datetime):
@@ -277,8 +271,8 @@ class Post:
         print("Username: " + self.get_username())
         print("User_url: " + self.get_user_url())
         print("Comments_count: " + str(self.get_comments_count()))
-        print("Saves: " + str(self.get_save()))
-        print("Shares: " + str(self.get_share()))
+        print("Saves: " + str(self.get_saves()))
+        print("Shares: " + str(self.get_shares()))
         print("Datetime: " + self.get_datetime())
         print("Url: " + self.get_url())
         print("Tags: ")
