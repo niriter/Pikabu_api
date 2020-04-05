@@ -59,7 +59,7 @@ feed.get_about() #return feed about if has about
 feed.get_date() #return date of feed
 
 feed.get_posts() #return Post objects
-- ```
+```
 
 #### Post
 ```python
@@ -104,7 +104,7 @@ post.get_pluses() #return number of pluses; Is available only with get_post
 post.get_minuses() #return number of minuses; Is available only with get_post
 
 post.get_comments() #return Comment objects; Is available only with get_post
-- ```
+```
 
 #### Comment
 ```python
