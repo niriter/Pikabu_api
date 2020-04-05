@@ -110,6 +110,7 @@ class Pikabu_api():
             pprint(error)
 
     def _get_page(self, url, headers={}):
+        self.logger.info(f"_get_page: url - {url}")
         try:
             if not headers:
                 headers = self.headers
